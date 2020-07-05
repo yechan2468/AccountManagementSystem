@@ -9,6 +9,8 @@ To run this program,
 - DBMS: MySQL Ver 14.14 Distrib 5.7.30, for Linux (x86_64) using EditLine wrapper
 - Python 3.8.3. for Windows(client) and for Linux(Server)
 - PyQt5 module installation for Windows OS
+- PyMySQL module installation for Linux OS
+<br>
 is needed.
 
 ## development
