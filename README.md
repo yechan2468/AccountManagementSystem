@@ -11,6 +11,6 @@ To run this program,
 is needed.
 
 ## development
-Developers : Eungwang Yang, Yechan Lee
-Development started : from 2020.07.05. - now
-program version 0.0.0. (On development, core functionalities not yet completed)
+Developers : Eungwang Yang, Yechan Lee<br>
+Development started : from 2020.07.05. - now<br>
+program version 0.0.0. (On development, core functionalities not yet completed)<br>
