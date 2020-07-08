@@ -7,7 +7,7 @@ This program is for handling financial tasks; More specifically, you can input, 
 To run this program, 
 - Server computer that has OS: Ubuntu Server 20.04 LTS (Linux 64bit)
 - DBMS: MySQL Ver 14.14 Distrib 5.7.30, for Linux (x86_64) using EditLine wrapper
-- Python 3.8.3. for Windows(client) and for Linux(Server)
+- Python 3.6.9. for Windows(client) and for Linux(Server)
 - PyQt5 module installation for Windows OS
 - PyMySQL module installation for Linux OS
 <br>
