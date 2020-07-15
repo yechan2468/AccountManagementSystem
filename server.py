@@ -18,3 +18,19 @@
 ############################################################################################################################################
 
 
+import pymysql
+import client
+
+db = pymysql.connect(host='192.0.0.1', port=3306, user='root', passwd='root', db='DB', charset='utf8')
+
+# 조건조회
+
+# 월말정산
+
+# 연말정산
+
+
+cursor = db.cursor()
+cursor.execute("SHOW TABLES")
+db.commit()
+db.close()
