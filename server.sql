@@ -35,6 +35,15 @@ CREATE PROCEDURE INS_Users
     OUT RESULT INT
     )
 BEGIN
+	/* 해당 정보를 가진 사람의 phoneNumber가 이미 존재한다면, update instead */
+	IF (
+			SELECT COUNT(phoneNumber) FROM Users
+            WHERE phoneNumber = _phoneNumber
+		) >= 1 THEN
+    CALL UPD_Users(_name, _phoneNumber, _address, _position, _role, _age, _id, _password, RESULT);
+    RETURN 0;
+    END IF;
+    
 	/* id와 password의 default 값을 각각 교인 이름과 0000으로 설정 */
 	IF _id = NULL THEN
         SET _id = _name;
@@ -48,6 +57,7 @@ BEGIN
     
 	COMMIT;
 	SET RESULT = 0;
+    SELECT RESULT;
 END$$
 DELIMITER ;
 
@@ -97,6 +107,7 @@ BEGIN
     
 	COMMIT;
 	SET RESULT = 0;
+    SELECT RESULT;
 END$$
 DELIMITER ;
 
@@ -135,6 +146,7 @@ BEGIN
     ELSE
 		SET RESULT = -1;
 	END IF;
+    SELECT RESULT;
 END$$
 DELIMITER ;
 
@@ -145,15 +157,13 @@ DROP PROCEDURE IF EXISTS GET_Users;
 DELIMITER $$
 CREATE PROCEDURE GET_Users (
 	IN _name VARCHAR(255), 
-    _phoneNumber VARCHAR(255),
-    OUT RESULT INT
+    _phoneNumber VARCHAR(255)
     )
 BEGIN
     IF _phoneNumber IS NOT NULL THEN
 		SELECT name, phoneNumber, address, position, role, age, id, password 
         FROM Users 
         WHERE phoneNumber = _phoneNumber;
-        SET RESULT = 0;
     ELSEIF (
 			SELECT COUNT(name) FROM Users
             WHERE name = _name
@@ -167,9 +177,8 @@ BEGIN
 					WHERE name = _name
 				) temp
 			); -- get information of whom having name '_name', using phoneNumber(PK)
-        SET RESULT = 0;
     ELSE
-		SET RESULT = -1;
+		SELECT 0;
 	END IF;
 END$$
 DELIMITER ;
