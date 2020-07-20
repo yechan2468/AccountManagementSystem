@@ -1,0 +1,54 @@
+
+현재 짐작할 수 있는 문제:
+
+- 재정부: 매주 재정 기록을 입력해야 함
+- 목사님, 사모님: 매주 주보 내용을 입력하고 인쇄해야 함
+- 방송부: 매주 주보 내용에 맞춰서 ppt를 만들어야 함
+- 성가대: (if !코로나) 매주마다 다음주에 할 곡을 정하고, 곡들을 인원수에 맞춰 인쇄하고, 연습해야 함
+- 찬양대: (if !코로나) 상동.
+- 조리팀: (if !코로나) 매주 메뉴를 정하고, 식자재를 사서 조리해야 함. 식사당번도 돌아가면서 정함
+- 교회 밖의 사람들: 홈페이지가 없어서 교회 식구들이 아닌 다른 사람들은 우리 교회의 정보(예배 시작시간, 예배안내, 공지사항, 설교영상, 주보, 새가족등록, 오시는길 등)를 접하기 어려움
+- 기타: 교회 사진들이나 동영상을 모아놓은 앨범, 혹은 클라우드가 있으면 좋을 듯
+
+자동화를 위한 방안들(우선순위 순):
+
+- 클라우드 서비스를 통해 성가대와 찬양대 악보 파일 공유, 교회 사진, 주보, 방송부 자료 등을 팀별로 공유
+- 컴퓨터를 쉽게 못 다루시는 분들을 위한 web based, 모바일 환경에서 볼 때도 문제 없도록 구축
+- 시간이 가능하다면 주보 파일을 통해 ppt 자동제작 툴 제작
+- 인쇄할 일이 많으므로 교회 프린터와 연동할 수 있는지 검토
+
+프로그램의 확장성을 위해서는 어떻게 해야 하는가?
+
+- 현재 사용하고 있는 DB가 NAS로, 일반 타 서버들에 비해 하드웨어 스펙이 좋지 않다는 점까지 생각해볼 때(NAS는 하드디스크 기능에 집중), 서버 단에서 너무 많은 일을 하면 앞으로 서버가 죽거나, 처리속도가 너무 늦는 불상사가 일어날 수 있음.
+- 따라서 앞으로 개발할 거의 모든 프로그램들은 클라이언트 단에서 대부분의 일을 하도록 하는 것이 좋을 듯함. 이렇게 하면 앞으로 프로그램의 확장성에도 도움이 될 수 있음.
+- Server에서 가장 최소의 최소한으로 제공해야만 하는 기능은 DB에 대한 조작, 즉 CRUD(Create, Read, Update, Delete)이다.
+- Server에서는 위의 기능만을 API로 제공하고, Client에서는 그 기능들을 이용해 개발.
+- e.g.) 월말정산을 한다면 Server에서 Read 기능 API 제공, Client에서는 Read한 데이터를 가공, 테이블에 넣어 UI로 보여주고 refresh
+
+- 지금 생각하고 있는 DB의 목록은 다음과 같음.
+
+DB (DB) (더 좋은 이름이 있다면 수정, 교회에 필요한 서비스들을 위해 필요할 듯한 general한 table들을 모아놓은 DB.)
+  ㄴ User (table) [name, phoneNumber, address(주소), position(직분), role(역할 (예: 찬양대)), age, id, password]
+                         * phoneNumber는 primary key(PK)로, 이 항목을 이용해 record들을 구별하므로 변경 불가. name과 phoneNumber는 NOT NULL
+  ㄴ Cars (table) [name, carNumber, carType, lastInspection] (차량 정비)
+  ㄴ Calendar (table)  (교회일정)
+  ㄴ ... (Cars, Calendar 등은 깊이 생각해보지 않았음. 이러한 기능을 제공할 수도 있겠다 뿐임.)
+  
+Accounts (DB)
+  ㄴ 2020 (table) [month, date, name, amount(금액), purpose, purposeDetail, others]
+  ㄴ 2021 (table) [ `` ]
+  ㄴ 2022 (table) [ `` ]
+  ㄴ 2023 (table) [ `` ]
+  ㄴ ...
+
+현재 개발중인 단계:
+- 서버 단계의 CRUD 기능을 만들어(server.sql) client.py에서 procedure를 불러 쓸 수 있도록 하는 중. 
+- 현재 INS_Users(insert), DEL_Users(delete), UPD_Users(update), GET_Users(get info of only one person) 4개의 procedure를 만들었음.
+- 조건에 맞게 read를 하는 GET_LIST_Users procedure를 따로 만들지, 아니면 이 경우에는 client에서 string 형식의 sql로 불러 쓸지 고민중임.
+- 지금 insert 기능을 담당하는 INS_Users에서 이미 insert한 항목을 다시 insert했을 때 server.sql에서 이 예외를 잘 처리하지 못하고 error를 내는 버그가 있음.
+
+- 원래는 server.py, client.py, ui.py 이 세 가지 파일들을 이용해 서비스를 제공하는 것을 생각했었는데, 서버 단에서는 데이터베이스와 server.sql만 있어도 되겠다고 생각함.
+- 따라서 server.sql의 기본 기능 구현 -> client.py에서 high level functions 구현(e.g. 월말정산, 연말정산, 조건검색, 엑셀 파일로 가공, 등등) -> ui
+
+위에서 쓴 것에서 추가할 것이 있거나 검토, 수정해야 할 부분이 있다면 언제든지 이 파일에 작성해주세요.
+제 폰에 푸시알림이 가도록 설정해놨어요
