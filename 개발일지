@@ -42,13 +42,31 @@ Accounts (DB)
   ㄴ ...
 
 현재 개발중인 단계:
+(DB Database의 Users Table)
 - 서버 단계의 CRUD 기능을 만들어(server.sql) client.py에서 procedure를 불러 쓸 수 있도록 하는 중. 
-- 현재 INS_Users(insert), DEL_Users(delete), UPD_Users(update), GET_Users(get info of only one person) 4개의 procedure를 만들었음.
+          --> procedure 불러 쓰기 동작 테스트 완료. 참고로 각각의 procedure에서 SELECT된 값을 pymysql을 이용해 fetch하면 ((RESULT, name, message)) 꼴의 nested tuple로 나옴.
+          --> RESULT(fetch[0][0])는 성공 시 0을, 실패 시 -1을 반환.
+- 현재 INS_Users(insert), DEL_Users(delete), UPD_Users(update), GET_Users(get info of only one person) 4개의 procedure를 만들었음. --> 모두 예외상황에서도 정상 작동 확인
 - 조건에 맞게 read를 하는 GET_LIST_Users procedure를 따로 만들지, 아니면 이 경우에는 client에서 string 형식의 sql로 불러 쓸지 고민중임.
-- 지금 insert 기능을 담당하는 INS_Users에서 이미 insert한 항목을 다시 insert했을 때 server.sql에서 이 예외를 잘 처리하지 못하고 error를 내는 버그가 있음.
+- 지금 insert 기능을 담당하는 INS_Users에서 이미 insert한 항목을 다시 insert했을 때 server.sql에서 이 예외를 잘 처리하지 못하고 error를 내는 버그가 있음. --> 해결
 
-- 원래는 server.py, client.py, ui.py 이 세 가지 파일들을 이용해 서비스를 제공하는 것을 생각했었는데, 서버 단에서는 데이터베이스와 server.sql만 있어도 되겠다고 생각함.
-- 따라서 server.sql의 기본 기능 구현 -> client.py에서 high level functions 구현(e.g. 월말정산, 연말정산, 조건검색, 엑셀 파일로 가공, 등등) -> ui
+(Accounts Database의 account2020 Table)
+- /* 
+Create_Account_Table procedure는 다 만들었음.
+account 정보를 insert해주는 INS_Account, 그리고 update, delete 등 이후 만들 함수에 필요할 것 같아서 primary key인 id를 반환해주는 Get_Account_Id를 만드는 중.
+그런데 Get_Account_ID에서 tableName, month, date, date, name, amount를 이용해 단 하나의 element를 특정할 수 없어서 고민임.
+e.g. 교회 특별한 행사 날짜에 익명으로 다수의 사람들이 같은 액수(e.g. 5만원) 을 감사헌금으로 낸 경우
+따라서 table 자체에 분류를 위한 field를 하나 더 추가할지, 이미 존재하는 others field를 이용할지 고민중
+*/
+
+(전체 프로그램의 구성)
+- 원래는 server.sql, server.py, client.py, ui.py 파일들을 이용해 서비스를 제공하는 것을 생각했었는데, 서버 단에서는 데이터베이스와 server.sql만 있어도 되겠다고 생각함.
+- 즉 필요한 파일은 server.sql, client.py, ui.py
+- [        server        ]                  [      client      ]
+- mysql DB <--> server.sql <----network---> client.py <--> ui.py
+- 현재 네트워크는 제외한 server단만 제작 중. 이후 NAS가 오면 설치 후 포트포워딩, IP 고정 등 작업이 필요함.
+- server.sql의 기본 기능 구현 -> client.py에서 high level functions 구현(e.g. 월말정산, 연말정산, 조건검색, 엑셀 파일로 가공, 등등) -> high level function들을 이용해 ui 구현
+  의 순서대로 개발하고 있음.
 
 위에서 쓴 것에서 추가할 것이 있거나 검토, 수정해야 할 부분이 있다면 언제든지 이 파일에 작성해주세요.
 제 폰에 푸시알림이 가도록 설정해놨어요

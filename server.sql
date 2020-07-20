@@ -1,3 +1,4 @@
+CREATE DATABASE IF NOT EXISTS DB DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
 USE DB;		-- DB: 천성교회의 교인, 일정 등을 관리하기 위한 테이블들을 모아 놓은 general한 목적의 데이터베이스.
 
 /* Users Table: 교인 정보 관리
@@ -214,4 +215,101 @@ SELECT * FROM Users;
 
 CALL UPD_Users('이예성', '01021946031', '충청남도 계룡시 장안로 75, 109동 1404호', NULL, "청년부", "19", NULL, NULL, @result);
 SELECT * FROM Users;
+*/
+
+CREATE DATABASE IF NOT EXISTS Accounts DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
+USE Accounts;
+
+/* Create_Table:  */
+DROP PROCEDURE IF EXISTS Create_Account_Table;
+DELIMITER $$
+CREATE PROCEDURE Create_Account_Table(IN tableName VARCHAR(255))
+BEGIN
+	SET @table := tableName;
+	SET @sql_text := 
+    CONCAT (
+		'CREATE TABLE IF NOT EXISTS ',@table,
+        '(
+			id int NOT NULL AUTO_INCREMENT PRIMARY KEY,
+			month INT(2) NOT NULL,
+			date INT(2) NOT NULL,
+			amount BIGINT NOT NULL,
+			name varchar(255),
+			purpose varchar(255),
+			purposeDetail VARCHAR(255),
+			others varchar(255)
+        ) DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;'
+	);
+	PREPARE stmt from @sql_text;
+	EXECUTE stmt;
+END$$
+DELIMITER ;
+
+/* INS_Account: 회계 내역을 insert. tableName, month, date, amount는 모두 NULL이 아니어야 함 */
+DROP PROCEDURE IF EXISTS Get_Account_Id;
+DELIMITER $$
+CREATE PROCEDURE Get_Account_Id
+(
+	IN 
+    tableName VARCHAR(255),
+	_month INT(2),
+	_date INT(2),
+	_amount BIGINT,
+	_name varchar(255)
+)
+Get_Account_Id_Label: BEGIN
+	IF (_tableName = NULL) OR (_month = NULL) OR (_date = NULL) OR (_amount = NULL) THEN
+		SELECT -1, 'tableName, month, date, amount는 모두 NULL이 아니어야 합니다.';
+		LEAVE Get_Account_Id_Label;
+    END IF;
+    
+	SET @table := tableName;
+    SET @sql_text := 
+    CONCAT (
+    'SELECT id FROM ', @table, ' WHERE (month = _month AND date = _date AND amount = _amount);'
+    );
+END$$
+DELIMITER ;
+
+-- CALL Create_Account_Table('account2020');
+/* INS_Account: 회계 내역을 insert. tableName, month, date, amount는 모두 NULL이 아니어야 함 */
+DROP PROCEDURE IF EXISTS INS_Account;
+DELIMITER $$
+CREATE PROCEDURE INS_Account
+(
+	IN 
+    tableName VARCHAR(255),
+	_month INT(2),
+	_date INT(2),
+	_amount BIGINT,
+	_name varchar(255),
+	_purpose varchar(255),
+	_purposeDetail VARCHAR(255),
+	_others varchar(255)
+)
+Create_Account_Table_Label: BEGIN
+	-- month, date, amount 셋 중 하나가 NULL value이면 오류
+	IF (tableName = NULL) OR (_month = NULL) OR (_date = NULL) OR (_amount = NULL) THEN
+		SELECT -1, 'tableName, month, date, amount parameter는 모두 NULL이 아니어야 합니다.';
+        LEAVE Create_Account_Table_Label;        
+	END IF;
+
+    SET @table := tableName;
+	SET @sql_text := 
+    CONCAT (
+		'INSERT INTO ',@table,'(month, date, amount, name, purpose, purposeDetail, others)
+        VALUE(_month, _date, _amount, _name, _purpose, _purposeDetail, _others);'
+	);
+	PREPARE stmt from @sql_text;
+	EXECUTE stmt;
+    SELECT 0, CONCAT(_month, '/', _date, ', ', _amount, ' won'), 'insert done';
+END$$
+DELIMITER ;
+
+/* 
+Users의 조작을 담당하는 *_Users procedure들과, Accounts DB의 Create_Account_Table procedure는 다 만들었음.
+account 정보를 insert해주는 INS_Account, 그리고 update, delete 등 이후 만들 함수에 필요할 것 같아서 primary key인 id를 반환해주는 Get_Account_Id를 만드는 중.
+그런데 Get_Account_ID에서 tableName, month, date, date, name, amount를 이용해 단 하나의 element를 특정할 수 없어서 고민임.
+e.g. 교회 특별한 행사 날짜에 익명으로 다수의 사람들이 같은 액수(e.g. 5만원) 을 감사헌금으로 낸 경우
+따라서 table 자체에 분류를 위한 field를 하나 더 추가할지, 이미 존재하는 others field를 이용할지 고민중
 */
