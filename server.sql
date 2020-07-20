@@ -10,16 +10,16 @@ CREATE TABLE IF NOT EXISTS Users (
     address varchar(255),
     position varchar(255),
     role varchar(255),
-    age int,
+    age VARCHAR(255),
 	id varchar(255),
     password varchar(255),
-    PRIMARY KEY phoneNumber(phoneNumber)
+    PRIMARY KEY PK(name, phoneNumber)
 );
 ALTER TABLE Users 
 CHARACTER SET utf8 
 COLLATE utf8_general_ci;	-- 한글 사용 가능
 
-/* INS_Users Procedure */
+/* INS_Users Procedure: 성공 시 return 0, 실패 시 return -1 */
 DROP PROCEDURE IF EXISTS INS_Users;
 DELIMITER $$
 CREATE PROCEDURE INS_Users
@@ -34,14 +34,22 @@ CREATE PROCEDURE INS_Users
     _password VARCHAR(255), 
     OUT RESULT INT
     )
-BEGIN
-	/* 해당 정보를 가진 사람의 phoneNumber가 이미 존재한다면, update instead */
+INS_Users_Label: BEGIN
+	/* 해당 정보를 가진 사람의 name이 이미 존재한다면, -- update instead */
 	IF (
 			SELECT COUNT(phoneNumber) FROM Users
             WHERE phoneNumber = _phoneNumber
-		) >= 1 THEN
-    CALL UPD_Users(_name, _phoneNumber, _address, _position, _role, _age, _id, _password, RESULT);
-    RETURN 0;
+		) >= 1
+        OR
+        (
+			SELECT COUNT(name) FROM Users
+            WHERE name = _name
+		) >= 1
+	THEN
+		-- CALL UPD_Users(_name, _phoneNumber, _address, _position, _role, _age, _id, _password, RESULT);
+        SET RESULT = -1;
+        SELECT RESULT, _name, 'Insert하려는 대상의 이름, 혹은 전화번호가 이미 테이블에 존재합니다.';
+        LEAVE INS_Users_Label;
     END IF;
     
 	/* id와 password의 default 값을 각각 교인 이름과 0000으로 설정 */
@@ -57,7 +65,7 @@ BEGIN
     
 	COMMIT;
 	SET RESULT = 0;
-    SELECT RESULT;
+    SELECT RESULT, _name, 'insert done';
 END$$
 DELIMITER ;
 
@@ -77,41 +85,48 @@ CREATE PROCEDURE UPD_Users
     _id VARCHAR(255), 
     _password VARCHAR(255), 
     OUT RESULT INT)
-BEGIN
-	/* If input parameter is given as NULL, do not change value (except for phoneNumber) */
-	IF _name = NULL THEN
-		SET _name = name;
-	END IF;
-	IF _address = NULL THEN
-		SET _address = address;
-	END IF;
-	IF _position = NULL THEN
-		SET _position = position;
-	END IF;
-	IF _role = NULL THEN
-		SET _role = role;
-	END IF;
-	IF _age = NULL THEN
-		SET _age = age;
-	END IF;
-	IF _id = NULL THEN
-		SET _id = id;
-	END IF;
-	IF _password = NULL THEN
-		SET _password = password;
+UPD_Users_Label: BEGIN
+	-- check if more than one parameter of (_name or _phoneNumber) is(are) given
+	IF _name IS NULL THEN
+		IF _phoneNumber IS NULL THEN
+			SET RESULT = -1;
+			SELECT RESULT, '이름, 혹은 전화번호 parameter 중 적어도 하나의 값이 주어져야 합니다.';
+			LEAVE UPD_Users_Label;
+		ELSE
+			SET _name = (SELECT name FROM Users WHERE phoneNumber = _phoneNumber);
+        END IF;
 	END IF;
     
+    -- update할 대상이 존재하는지 check
+    IF 
+    (
+		SELECT COUNT(name) FROM Users
+		WHERE name = _name
+	) = 0 
+    THEN
+		SET RESULT = -1;
+		SELECT RESULT, _name, 'update할 대상(_name)이 존재하지 않습니다.';
+		LEAVE UPD_Users_Label;
+    END IF;
+    
+	/* If input parameter is given as NULL, do not change value */
 	UPDATE Users
-	SET address=_address, phoneNumber=_phoneNumber, position=_position, role=_role, age=_age, id=_id, password=_password
-	WHERE phoneNumber = _phoneNumber;
+	SET 
+		address = COALESCE(_address, address),
+		position = COALESCE(_position, position),
+		role = COALESCE(_role, role), 
+        age = COALESCE(_age, age),
+		id = COALESCE(_id, id),
+		password = COALESCE(_password, password)
+	WHERE name = _name;
     
 	COMMIT;
 	SET RESULT = 0;
-    SELECT RESULT;
+    SELECT RESULT, _name, 'update done';
 END$$
 DELIMITER ;
 
-/* DEL_Users: phoneNumber가 primary key(PK)이므로, 입력된 _phoneNumber를 가진 user 정보를 삭제. 만약 동명이인이 존재한다면 _name을 참고하여 삭제.
+/* DEL_Users: name과 phoneNumber 둘이 primary key(PK)이므로, 입력된 _name 혹은 _phoneNumber를 가진 user 정보를 삭제.
    따라서 name과 phoneNumber 둘 중 하나를 NULL로 비워 놓아도 됨.
 */
 DROP PROCEDURE IF EXISTS DEL_Users;
@@ -122,36 +137,28 @@ CREATE PROCEDURE DEL_Users (
 		OUT RESULT INT
     )
 BEGIN
-    IF _phoneNumber IS NOT NULL THEN
+    IF _phoneNumber IS NULL THEN
+        DELETE FROM Users 
+        WHERE name = _name;
+        COMMIT;
+        SET RESULT = 0;
+		SELECT RESULT, _name, 'delete done';
+    ELSEIF _name IS NULL THEN
 		DELETE FROM Users 
         WHERE phoneNumber = _phoneNumber;
         COMMIT;
         SET RESULT = 0;
-    ELSEIF (
-			SELECT COUNT(name) FROM Users
-            WHERE name = _name
-			GROUP BY name
-		) = 1 THEN	-- if there is only one user that has name '_name'
-        DELETE FROM Users 
-        WHERE phoneNumber = (
-			SELECT phoneNumber FROM (
-					SELECT phoneNumber FROM Users 
-					WHERE name = _name
-                ) temp
-			);	-- DELETE information of whom having name '_name', using phoneNumber(PK)
-        -- Used subquery, since MySQL prohibits from using data of the table itself when it is to UPDATE or DELETE the table
-        -- (If we do not use subquery, MySQL Error 1093 will occur)
-        COMMIT;
-        SET RESULT = 0;
+		SELECT RESULT, (SELECT name FROM User WHERE phoneNumber = _phoneNumber), 'delete done';
     ELSE
 		SET RESULT = -1;
+        SELECT RESULT, '이름, 혹은 전화번호 parameter는 NULL 값이 될 수 없습니다.';
 	END IF;
-    SELECT RESULT;
 END$$
 DELIMITER ;
 
 /* GET_Users: only 한 사람이 가진 정보만을 return받기 위한 함수. 
    DEL_Users와 비슷한 mechanism으로, name이나 phoneNumber 둘 중 하나 이상을 입력 parameter로 받는다.
+   GET하지 못했을 때 -1을 SELECT
 */
 DROP PROCEDURE IF EXISTS GET_Users;
 DELIMITER $$
@@ -160,15 +167,11 @@ CREATE PROCEDURE GET_Users (
     _phoneNumber VARCHAR(255)
     )
 BEGIN
-    IF _phoneNumber IS NOT NULL THEN
+    IF _name IS NOT NULL THEN
 		SELECT name, phoneNumber, address, position, role, age, id, password 
         FROM Users 
-        WHERE phoneNumber = _phoneNumber;
-    ELSEIF (
-			SELECT COUNT(name) FROM Users
-            WHERE name = _name
-			GROUP BY name
-		) = 1 THEN	-- if there is only one user that has name '_name'
+        WHERE name = _name;
+    ELSEIF _phoneNumber IS NOT NULL THEN
         SELECT name, phoneNumber, address, position, role, age, id, password 
         FROM Users 
         WHERE phoneNumber = (
@@ -178,7 +181,7 @@ BEGIN
 				) temp
 			); -- get information of whom having name '_name', using phoneNumber(PK)
     ELSE
-		SELECT 0;
+		SELECT -1, '이름, 혹은 전화번호 parameter 중 하나의 값이 존재해야 합니다.';
 	END IF;
 END$$
 DELIMITER ;
@@ -186,11 +189,13 @@ DELIMITER ;
 /* for debugging */
 /*
 SET @result = -1;
+
 SET @name = '이예찬';
 SET @phoneNumber = '01021156036';
 SET @address = '충청남도 계룡시 장안로 75, 109동 1404호';
 -- insert User
 CALL INS_Users(@name, @phoneNumber, @address, NULL, NULL, NULL, NULL, NULL, @result);
+
 SET @name = '양은광';
 SET @phoneNumber = '01028885479';
 SET @address = '대전광역시 대덕구 관평동 그다음은 모름';
@@ -205,5 +210,8 @@ SELECT * FROM Users;
 
 -- delete User
 CALL DEL_Users(@name, NULL, @result);
+SELECT * FROM Users;	
+
+CALL UPD_Users('이예성', '01021946031', '충청남도 계룡시 장안로 75, 109동 1404호', NULL, "청년부", "19", NULL, NULL, @result);
 SELECT * FROM Users;
 */

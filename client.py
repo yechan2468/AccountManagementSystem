@@ -32,36 +32,41 @@ cursor = db.cursor()
 
 # INS_Users(name, phoneNumber, address, position, role, age, id, password, result): 9 input parameters
 cursor.callproc("INS_Users", ("이예성", "01021946031", "충청남도 계룡시 장안로 75, 109동 1404호", "학생", "찬양대", "19", None, None, -1))
-if (isSuccess == 0):
-    print(cursor.fetchall())
-else:
+fetch = cursor.fetchall()
+if fetch == False or fetch[0][0] == -1 :
     print("Failed to insert user data to mysql server.")
+else:
+    print(fetch)
+    db.commit()
 
 # UPD_Users(name, phoneNumber, address, position, role, age, id, password, result): 9 input parameters
 #   - Null(None) value in the input parameter is treated as non-changing
-cursor.callproc("UPD_Users", ("이예성", None, None, "집사", "청년부", "찬양대", "20", None, -1))
-if (isSuccess == 0):
-    print(cursor.fetchall())
+cursor.callproc("UPD_Users", ("이예성", None, None, "집사", "청년부", "20", None, None, -1))
+fetch = cursor.fetchall()
+if fetch == False or fetch[0][0] == -1 :
+    print("Failed to update user data in mysql server." + fetch)
 else:
-    print("Failed to update user data in mysql server.")
+    print(fetch)
+    db.commit()
 
 # GET_Users(name, phoneNumber, result): 2 input parameters
 #   - if more than one input parameter(name, phoneNumber) is given, returns information(row) of the person
 cursor.callproc("GET_Users", ("이예찬", None))
-print(isSuccess)
-print(cursor.fetchall())
-if (isSuccess == 0):
-    print(cursor.fetchall())
+fetch = cursor.fetchall()
+if fetch == False or fetch[0][0] == -1 :
+    print("Failed to get user data in mysql server:" + fetch)
 else:
-    print("Failed to get user data in mysql server.")
+    print(fetch)
 
 # DEL_Users(name, phoneNumber, result): 2 input parameters
 #   - if more than one input parameter(name, phoneNumber) is given, deletes information(row) of the person
 cursor.callproc("DEL_Users", ("이예성", None, -1))
-if (isSuccess == 0):
-    print(cursor.fetchall())
+fetch = cursor.fetchall()
+if fetch == False or fetch[0][0] == -1 :
+    print("Failed to delete user data in mysql server." + fetch)
 else:
-    print("Failed to delete user data in mysql server.")
+    print(fetch)
+    db.commit()
 
 sql = "SELECT * FROM Users"
 cursor.execute(sql)
