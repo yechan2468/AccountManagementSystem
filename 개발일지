@@ -51,13 +51,14 @@ Accounts (DB)
 - 지금 insert 기능을 담당하는 INS_Users에서 이미 insert한 항목을 다시 insert했을 때 server.sql에서 이 예외를 잘 처리하지 못하고 error를 내는 버그가 있음. --> 해결
 
 (Accounts Database의 account2020 Table)
-- /* 
-Create_Account_Table procedure는 다 만들었음.
+- Create_Account_Table procedure는 다 만들었음.
 account 정보를 insert해주는 INS_Account, 그리고 update, delete 등 이후 만들 함수에 필요할 것 같아서 primary key인 id를 반환해주는 Get_Account_Id를 만드는 중.
-그런데 Get_Account_ID에서 tableName, month, date, date, name, amount를 이용해 단 하나의 element를 특정할 수 없어서 고민임.
+그런데 Get_Account_ID에서 tableName, month, date, date, name, amount를 이용해 단 하나의 element를 특정할 수 없어서 고민임. --> 다른 approach를 취하기로 함
 e.g. 교회 특별한 행사 날짜에 익명으로 다수의 사람들이 같은 액수(e.g. 5만원) 을 감사헌금으로 낸 경우
-따라서 table 자체에 분류를 위한 field를 하나 더 추가할지, 이미 존재하는 others field를 이용할지 고민중
-*/
+따라서 table 자체에 분류를 위한 field를 하나 더 추가할지, 이미 존재하는 others field를 이용할지 고민중 --> 다른 approach를 취하기로 함
+- 현재 Accounts의 account2020, account2021, ... 등 테이블을 관리하기 위한 procedure인
+  INS_Accounts, DEL_Accounts, INS_Middle_Accounts, UPD_Accounts 등등을 제작했으나, test는 하지 않았음.
+  GET_LIST_Accounts는 어떻게 만들지 고민 중으로, 개발을 끝내지 못했음.
 
 (전체 프로그램의 구성)
 - 원래는 server.sql, server.py, client.py, ui.py 파일들을 이용해 서비스를 제공하는 것을 생각했었는데, 서버 단에서는 데이터베이스와 server.sql만 있어도 되겠다고 생각함.
@@ -70,3 +71,4 @@ e.g. 교회 특별한 행사 날짜에 익명으로 다수의 사람들이 같�
 
 위에서 쓴 것에서 추가할 것이 있거나 검토, 수정해야 할 부분이 있다면 언제든지 이 파일에 작성해주세요.
 제 폰에 푸시알림이 가도록 설정해놨어요
+앞으로 개발일지에 적기보다는 github의 project 탭에 진행사항을 올릴게요
