@@ -29,6 +29,55 @@ db_acc = pymysql.connect(host='219.255.75.109', port=17000, user='cjstjd', passw
 DB_ACC = db_acc.cursor()
 print('DB_ACC Connected')
 
+
+def PROC_INS(db, table, procedure_parameters) :
+    cursor.callproc("INS_T_User", ("이예성", "01021946031", "충청남도 계룡시 장안로 75, 109동 1404호", "학생", "찬양대", "19", None, None))
+    fetch = cursor.fetchall()
+    if fetch == False or fetch[0][0] == -1 :
+        print("Failed to insert user data to mysql server.")
+    else:
+        print(fetch)
+        db.commit()
+
+def PROC_UPD(db, table, procedure_parameters) :
+    cursor.callproc("UPD_Users", ("이예성", None, None, "집사", "청년부", "20", None, None))
+    fetch = cursor.fetchall()
+    if fetch == False or fetch[0][0] == -1 :
+        print("Failed to update user data in mysql server." + fetch)
+    else:
+        print(fetch)
+        db.commit()
+
+def PROC_GET(db, table, procedure_parameters) :
+    cursor.callproc("GET_Users", ("이예찬", None))
+    fetch = cursor.fetchall()
+    if fetch == False or fetch[0][0] == -1 :
+        print("Failed to get user data in mysql server:" + fetch)
+    else:
+        print(fetch)
+
+def PROC_DEL(db, table, procedure_parameters) :
+    cursor.callproc("DEL_Users", ("이예성", None))
+    fetch = cursor.fetchall()
+    if fetch == False or fetch[0][0] == -1 :
+        print("Failed to delete user data in mysql server." + fetch)
+    else:
+        print(fetch)
+        db.commit()
+
+def procedure_request_handling(db, table, procedure, procedure_parameters) :
+    if procedure == "INS":
+        PROC_INS()
+    else if procedure == "UPD":
+        pass
+    else if procedure == "GET":
+        pass
+    else if procedure == "DEL":
+        pass
+    else:
+        print("invalid request: there is no procedure type", procedure)       
+
+
 # 쓰레드에서 실행되는 코드입니다. 
 # 접속한 클라이언트마다 새로운 쓰레드가 생성되어 통신을 하게 됩니다. 
 def threaded(client_socket, addr): 
@@ -38,15 +87,18 @@ def threaded(client_socket, addr):
     while True: 
         try:
             # 데이터가 수신되면 클라이언트에 다시 전송합니다.(에코)
-            data = client_socket.recv(1024)
+            rawData = client_socket.recv(1024)
 
-            if not data: 
+            if not rawData: 
                 print('Disconnected by ' + addr[0],':',addr[1])
                 break
+            
+            data = rawData.decode
+            print('Received from ' + addr[0],':',addr[1] , data)
+            
+            procedure_request_handling()
 
-            print('Received from ' + addr[0],':',addr[1] , data.decode())
-
-            client_socket.send(data) 
+            client_socket.send(rawData) 
         except ConnectionResetError as e:
             print('Disconnected by ' + addr[0],':',addr[1])
             break
@@ -87,43 +139,7 @@ server_socket.close()
 
 ### 2.DB로 SQL문전송 및 결과받기?
 
-# # INS_Users(name, phoneNumber, address, position, role, age, id, password, result): 9 input parameters
-# cursor.callproc("INS_T_User", ("이예성", "01021946031", "충청남도 계룡시 장안로 75, 109동 1404호", "학생", "찬양대", "19", None, None))
-# fetch = cursor.fetchall()
-# if fetch == False or fetch[0][0] == -1 :
-#     print("Failed to insert user data to mysql server.")
-# else:
-#     print(fetch)
-#     db.commit()
 
-# # UPD_Users(name, phoneNumber, address, position, role, age, id, password, result): 9 input parameters
-# #   - Null(None) value in the input parameter is treated as non-changing
-# cursor.callproc("UPD_Users", ("이예성", None, None, "집사", "청년부", "20", None, None))
-# fetch = cursor.fetchall()
-# if fetch == False or fetch[0][0] == -1 :
-#     print("Failed to update user data in mysql server." + fetch)
-# else:
-#     print(fetch)
-#     db.commit()
-
-# # GET_Users(name, phoneNumber, result): 2 input parameters
-# #   - if more than one input parameter(name, phoneNumber) is given, returns information(row) of the person
-# cursor.callproc("GET_Users", ("이예찬", None))
-# fetch = cursor.fetchall()
-# if fetch == False or fetch[0][0] == -1 :
-#     print("Failed to get user data in mysql server:" + fetch)
-# else:
-#     print(fetch)
-
-# # DEL_Users(name, phoneNumber, result): 2 input parameters
-# #   - if more than one input parameter(name, phoneNumber) is given, deletes information(row) of the person
-# cursor.callproc("DEL_Users", ("이예성", None))
-# fetch = cursor.fetchall()
-# if fetch == False or fetch[0][0] == -1 :
-#     print("Failed to delete user data in mysql server." + fetch)
-# else:
-#     print(fetch)
-#     db.commit()
 
 # sql = "SELECT * FROM Users"
 # cursor.execute(sql)
