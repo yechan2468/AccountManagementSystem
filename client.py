@@ -17,63 +17,30 @@
 ############################################################################################################################################
 
 
-import pymysql
+import socket 
 
-# connect to mysql server
-db = pymysql.connect(host='127.0.0.1', port=3306, user='root', passwd='root', db='DB', charset='utf8')
-cursor = db.cursor()
+# 219.255.75.109:18000 -> 포트포워딩 (3308)
+HOST = '219.255.75.109'
+PORT = 18000
 
-# How to call procedure
+client_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM) 
 
-# input parameter is all set to string
-# output parameter(result) is set to int, and it means if the procedure call succedded(0:success, -1:failure)
-# phoneNumber cannot be null value at any situation; it works as primary key in mysql server.
-# insert, update, get, delete functionailty is provided as stored procedure
+# connect to host
+client_socket.connect((HOST, PORT)) 
 
-# INS_Users(name, phoneNumber, address, position, role, age, id, password, result): 9 input parameters
-cursor.callproc("INS_Users", ("이예성", "01021946031", "충청남도 계룡시 장안로 75, 109동 1404호", "학생", "찬양대", "19", None, None))
-fetch = cursor.fetchall()
-if fetch == False or fetch[0][0] == -1 :
-    print("Failed to insert user data to mysql server.")
-else:
-    print(fetch)
-    db.commit()
 
-# UPD_Users(name, phoneNumber, address, position, role, age, id, password, result): 9 input parameters
-#   - Null(None) value in the input parameter is treated as non-changing
-cursor.callproc("UPD_Users", ("이예성", None, None, "집사", "청년부", "20", None, None))
-fetch = cursor.fetchall()
-if fetch == False or fetch[0][0] == -1 :
-    print("Failed to update user data in mysql server." + fetch)
-else:
-    print(fetch)
-    db.commit()
 
-# GET_Users(name, phoneNumber, result): 2 input parameters
-#   - if more than one input parameter(name, phoneNumber) is given, returns information(row) of the person
-cursor.callproc("GET_Users", ("이예찬", None))
-fetch = cursor.fetchall()
-if fetch == False or fetch[0][0] == -1 :
-    print("Failed to get user data in mysql server:" + fetch)
-else:
-    print(fetch)
+# 키보드로 입력한 문자열을 서버로 전송하고 
+# 서버에서 에코되어 돌아오는 메시지를 받으면 화면에 출력합니다. 
+# quit를 입력할 때 까지 반복합니다. 
+while True: 
+    message = input('Enter Message : ')
+    if message == 'quit':
+    	break
 
-# DEL_Users(name, phoneNumber, result): 2 input parameters
-#   - if more than one input parameter(name, phoneNumber) is given, deletes information(row) of the person
-cursor.callproc("DEL_Users", ("이예성", None))
-fetch = cursor.fetchall()
-if fetch == False or fetch[0][0] == -1 :
-    print("Failed to delete user data in mysql server." + fetch)
-else:
-    print(fetch)
-    db.commit()
+    client_socket.send(message.encode()) 
+    data = client_socket.recv(1024) 
 
-sql = "SELECT * FROM Users"
-cursor.execute(sql)
-print(cursor.fetchall())
+    print('Received from the server :',repr(data.decode())) 
 
-db.commit()
-db.close()
-
-# Accounts Table의 purpose, purposeDetail 등에 들어가는 내용은 별도의 파일로 관리
-# 시작할 때 DB에서 Accounts_Id_Table 불러오고, 내용 변경할 때나 끌 때는 DB에 Accounts_Id_Table 저장
+client_socket.close() 
