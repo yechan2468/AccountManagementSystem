@@ -155,6 +155,8 @@ class Ui_MainWindow(object):
         self.dateEdit_2.setDisplayFormat(_translate("MainWindow", "M. d."))
         self.label_5.setText(_translate("MainWindow", "~"))
 
+    def test():
+        pushButton_2.setText("")
 
 if __name__ == "__main__":
     import sys
