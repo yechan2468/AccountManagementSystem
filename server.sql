@@ -1,6 +1,6 @@
 /*
 
-# <Account Management System>
+# <Account Manbirthdayment System>
 # This program is for handling financial tasks; More specifically, you can input, store, inquire account informations(revenue, expenditure).
 # This code "server.sql" performs things below:
 #   1. get requirements from "client.py" through stored procedure calls or SQL given by string type,
@@ -15,8 +15,8 @@
 
 */
 
-CREATE DATABASE IF NOT EXISTS DB DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
-USE DB;		-- DB: 천성교회의 교인, 일정 등을 관리하기 위한 테이블들을 모아 놓은 general한 목적의 데이터베이스.
+CREATE DATABASE IF NOT EXISTS DB_COM DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
+USE DB_COM;		-- DB: 천성교회의 교인, 일정 등을 관리하기 위한 테이블들을 모아 놓은 general한 목적의 데이터베이스.
 
 /* ================================================================================================================================= */
 
@@ -28,17 +28,17 @@ USE DB;		-- DB: 천성교회의 교인, 일정 등을 관리하기 위한 테이
    여기에 구현된 procedure에서는 값이 NULL로 주어졌는지 정도만 검사하고, 잘못된 data의 input으로 인한 예상치 못한 결과에 대해서는 보장할 수 없음.
  */
 
-CREATE TABLE IF NOT EXISTS Users 
+CREATE TABLE IF NOT EXISTS T_USER
 (
-    name varchar(255) NOT NULL,
-    phoneNumber varchar(255) NOT NULL,	-- hyphen('-') is not included
-    address varchar(255),
-    position varchar(255),
-    role varchar(255),
-    age VARCHAR(255),
-	id varchar(255),
-    password varchar(255),
-    PRIMARY KEY PK(name, phoneNumber)
+	userid VARCHAR(100) NOT NULL,		-- 아이디
+	password varchar(255),				-- 비번
+    name varchar(100) NOT NULL,			-- 이름
+    phoneNumber varchar(255),			-- 전화번호 hyphen('-') is not included
+    address varchar(255),				-- 주소
+    position varchar(255),				-- 직분
+    birthday date,						-- 생년월일
+	comments varchar(255),				-- 비고
+    PRIMARY KEY PK(userid)
 ) DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;	-- 한글 사용 가능
 
 /* INS_Users Procedure: 성공 시 return 0, 실패 시 return -1 */
@@ -49,9 +49,9 @@ CREATE PROCEDURE INS_Users
 	IN _name VARCHAR(255), 
     _phoneNumber VARCHAR(255), 
     _address VARCHAR(255), 
-    _position VARCHAR(255), 
-    _role VARCHAR(255),
-	_age VARCHAR(255), 
+    _part VARCHAR(255), 
+    _position VARCHAR(255),
+	_birthday VARCHAR(255), 
     _id VARCHAR(255), 
     _password VARCHAR(255)
 )
@@ -67,7 +67,7 @@ INS_Users_Label: BEGIN
             WHERE name = _name
 		) >= 1
 	THEN
-		CALL UPD_Users(_name, _phoneNumber, _address, _position, _role, _age, _id, _password);
+		CALL UPD_Users(_name, _phoneNumber, _address, _part, _position, _birthday, _id, _password);
         SELECT -1, _name, 'Insert하려는 대상의 이름, 혹은 전화번호가 이미 테이블에 존재합니다. 대신 주어진 정보를 이용해 Update했습니다.';
         LEAVE INS_Users_Label;
     END IF;
@@ -81,8 +81,8 @@ INS_Users_Label: BEGIN
 	END IF;
     
     START TRANSACTION;
-	INSERT INTO Users(name, address, phoneNumber, position, role, age, id, password)
-	VALUE(_name, _address, _phoneNumber, _position, _role, _age, _id, _password);
+	INSERT INTO Users(name, address, phoneNumber, part, position, birthday, id, password)
+	VALUE(_name, _address, _phoneNumber, _part, _position, _birthday, _id, _password);
 	COMMIT;
     
     SELECT 0, _name, 'insert done';
@@ -99,9 +99,9 @@ CREATE PROCEDURE UPD_Users
 	IN _name VARCHAR(255), 
     _phoneNumber VARCHAR(255), 
     _address VARCHAR(255), 
-    _position VARCHAR(255), 
-    _role VARCHAR(255),
-	_age VARCHAR(255), 
+    _part VARCHAR(255), 
+    _position VARCHAR(255),
+	_birthday VARCHAR(255), 
     _id VARCHAR(255), 
     _password VARCHAR(255), 
 )
@@ -132,9 +132,9 @@ UPD_Users_Label: BEGIN
     UPDATE Users
 	SET 
 		address = COALESCE(_address, address),
-		position = COALESCE(_position, position),
-		role = COALESCE(_role, role), 
-        age = COALESCE(_age, age),
+		part = COALESCE(_part, part),
+		position = COALESCE(_position, position), 
+        birthday = COALESCE(_birthday, birthday),
 		id = COALESCE(_id, id),
 		password = COALESCE(_password, password)
 	WHERE name = _name;
@@ -188,11 +188,11 @@ CREATE PROCEDURE GET_Users
 )
 BEGIN
     IF _name IS NOT NULL THEN
-		SELECT name, phoneNumber, address, position, role, age, id, password 
+		SELECT name, phoneNumber, address, part, position, birthday, id, password 
         FROM Users 
         WHERE name = _name;
     ELSEIF _phoneNumber IS NOT NULL THEN
-        SELECT name, phoneNumber, address, position, role, age, id, password 
+        SELECT name, phoneNumber, address, part, position, birthday, id, password 
         FROM Users 
         WHERE phoneNumber = (
 			SELECT phoneNumber FROM (
@@ -257,8 +257,8 @@ SELECT * FROM Users;
  - GET_LIST_Accounts: 연속적이지 않은 데이터 불러오기, e.g. 조건검색에 사용.
 */
 
-CREATE DATABASE IF NOT EXISTS Accounts DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
-USE Accounts;
+CREATE DATABASE IF NOT EXISTS DB_ACC DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
+USE DB_ACC;
 
 /* ================================================================================================================================= */
 
