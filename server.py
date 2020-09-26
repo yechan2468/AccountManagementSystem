@@ -17,22 +17,12 @@
 
 ############################################################################################################################################
 
+# 1.DB와 연결, 클라이언트와 연결
 
-import pymysql
-import client
+# 2.DB로 SPL문전송 및 결과받기?
 
-db = pymysql.connect(host='192.0.0.1', port=3306, user='root', passwd='root', db='DB', charset='utf8')
+# 3.받은결과 클라이언트로 전송
 
-# 조건조회
+# 4.로그 남기기(T_LOG)
 
-# 월말정산
-
-# 연말정산
-
-
-cursor = db.cursor()
-cursor.execute("SHOW TABLES")
-db.commit()
-db.close()
-
-# hello
+# *주고받고의 성공여부를 클라이언트로 전송
